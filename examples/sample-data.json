@@ -1,0 +1,198 @@
+{
+  "invoice": {
+    "template": "invoice-template.docx",
+    "data": {
+      "company": {
+        "name": "Acme Corporation",
+        "address": "123 Business Street",
+        "city": "New York",
+        "state": "NY",
+        "zip": "10001",
+        "phone": "(555) 123-4567",
+        "email": "billing@acme.com"
+      },
+      "client": {
+        "name": "John Doe",
+        "company": "Doe Enterprises",
+        "address": "456 Client Avenue",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zip": "90210",
+        "email": "john@doe-enterprises.com"
+      },
+      "invoice": {
+        "number": "INV-2024-001",
+        "date": "2024-01-15",
+        "dueDate": "2024-02-15",
+        "terms": "Net 30"
+      },
+      "items": [
+        {
+          "description": "Web Development Services",
+          "quantity": 40,
+          "rate": 150.00,
+          "amount": 6000.00
+        },
+        {
+          "description": "UI/UX Design",
+          "quantity": 20,
+          "rate": 125.00,
+          "amount": 2500.00
+        },
+        {
+          "description": "Project Management",
+          "quantity": 10,
+          "rate": 100.00,
+          "amount": 1000.00
+        }
+      ],
+      "subtotal": 9500.00,
+      "tax": 950.00,
+      "total": 10450.00,
+      "notes": "Thank you for your business!"
+    }
+  },
+  "letter": {
+    "template": "business-letter.docx",
+    "data": {
+      "sender": {
+        "name": "Jane Smith",
+        "title": "Marketing Director",
+        "company": "Tech Solutions Inc.",
+        "address": "789 Tech Park Drive",
+        "city": "San Francisco",
+        "state": "CA",
+        "zip": "94105",
+        "phone": "(555) 987-6543",
+        "email": "jane.smith@techsolutions.com"
+      },
+      "recipient": {
+        "name": "Mr. Robert Johnson",
+        "title": "CEO",
+        "company": "Innovation Corp",
+        "address": "321 Innovation Blvd",
+        "city": "Austin",
+        "state": "TX",
+        "zip": "73301"
+      },
+      "date": "January 15, 2024",
+      "subject": "Partnership Proposal",
+      "body": "We are excited to propose a strategic partnership between our companies. Our complementary services and shared vision for innovation make this collaboration a natural fit.",
+      "closing": "Sincerely",
+      "attachments": ["Partnership Proposal.pdf", "Company Overview.pdf"]
+    }
+  },
+  "report": {
+    "template": "monthly-report.docx",
+    "data": {
+      "report": {
+        "title": "Monthly Sales Report",
+        "period": "December 2023",
+        "preparedBy": "Sales Analytics Team",
+        "date": "January 5, 2024"
+      },
+      "summary": {
+        "totalSales": 125000,
+        "totalOrders": 450,
+        "averageOrderValue": 277.78,
+        "growthRate": 15.2
+      },
+      "metrics": [
+        {
+          "category": "Product Sales",
+          "current": 85000,
+          "previous": 72000,
+          "change": 18.1
+        },
+        {
+          "category": "Service Revenue",
+          "current": 40000,
+          "previous": 38000,
+          "change": 5.3
+        }
+      ],
+      "topProducts": [
+        {
+          "name": "Premium Widget",
+          "sales": 25000,
+          "units": 125
+        },
+        {
+          "name": "Standard Widget",
+          "sales": 18000,
+          "units": 200
+        },
+        {
+          "name": "Basic Widget",
+          "sales": 12000,
+          "units": 300
+        }
+      ],
+      "regions": [
+        {
+          "name": "North America",
+          "sales": 75000,
+          "percentage": 60
+        },
+        {
+          "name": "Europe",
+          "sales": 35000,
+          "percentage": 28
+        },
+        {
+          "name": "Asia Pacific",
+          "sales": 15000,
+          "percentage": 12
+        }
+      ]
+    }
+  },
+  "contract": {
+    "template": "service-contract.docx",
+    "data": {
+      "contract": {
+        "number": "SC-2024-001",
+        "date": "January 15, 2024",
+        "effectiveDate": "February 1, 2024",
+        "expirationDate": "January 31, 2025"
+      },
+      "client": {
+        "name": "Global Enterprises LLC",
+        "address": "555 Corporate Plaza",
+        "city": "Chicago",
+        "state": "IL",
+        "zip": "60601",
+        "representative": "Michael Brown",
+        "title": "Operations Manager"
+      },
+      "provider": {
+        "name": "Professional Services Inc.",
+        "address": "777 Service Center",
+        "city": "Denver",
+        "state": "CO",
+        "zip": "80202",
+        "representative": "Sarah Wilson",
+        "title": "Account Director"
+      },
+      "services": [
+        {
+          "name": "IT Support Services",
+          "description": "24/7 technical support and maintenance",
+          "rate": 5000,
+          "frequency": "monthly"
+        },
+        {
+          "name": "Security Monitoring",
+          "description": "Continuous security monitoring and threat detection",
+          "rate": 3000,
+          "frequency": "monthly"
+        }
+      ],
+      "terms": {
+        "paymentTerms": "Net 30 days",
+        "cancellationNotice": "30 days written notice",
+        "renewalTerms": "Automatic renewal for 12 months unless cancelled"
+      }
+    }
+  }
+}
