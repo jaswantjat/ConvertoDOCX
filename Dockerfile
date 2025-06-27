@@ -15,8 +15,8 @@ RUN apk add --no-cache \
     g++ \
     libc6-compat
 
-# Copy package files
-COPY package*.json ./
+# Copy all application files first (including scripts directory)
+COPY . .
 
 # Configure npm for better caching and security
 RUN npm config set cache /tmp/.npm-cache && \
@@ -24,12 +24,9 @@ RUN npm config set cache /tmp/.npm-cache && \
     npm config set audit false && \
     npm config set fund false
 
-# Install dependencies with clean cache
+# Install dependencies with clean cache (postinstall script can now find scripts/)
 RUN npm ci --omit=dev --no-audit --no-fund && \
     npm cache clean --force
-
-# Copy application code
-COPY . .
 
 # Create necessary directories
 RUN mkdir -p src/templates/html logs && \

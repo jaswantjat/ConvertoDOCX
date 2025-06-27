@@ -14,7 +14,7 @@
     "lint:fix": "eslint src/ --fix",
     "validate-deployment": "node scripts/validate-deployment.js",
     "create-template": "node scripts/create-exercise-template.js",
-    "postinstall": "npm run create-template"
+    "postinstall": "test -f scripts/create-exercise-template.js && npm run create-template || echo 'Skipping template creation - script not found'"
   },
   "keywords": [
     "docx",
