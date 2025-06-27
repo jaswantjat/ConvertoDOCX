@@ -67,12 +67,9 @@ class DocxService {
         ...options
       })
 
-      // Set the template variables
-      doc.setData(data)
-
       try {
-        // Render the document
-        doc.render()
+        // Set data and render the document (new API)
+        doc.render(data)
       } catch (error) {
         // Handle template rendering errors
         if (error.properties && error.properties.errors instanceof Array) {

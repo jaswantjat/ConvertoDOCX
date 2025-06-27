@@ -5,7 +5,7 @@ const docxService = require('../services/docxService')
 const htmlService = require('../services/htmlService')
 const logger = require('../utils/logger')
 
-// Multer configuration for file uploads
+// Multer configuration for file uploads (v2 compatible)
 const storage = multer.memoryStorage()
 const upload = multer({
   storage,
@@ -14,10 +14,11 @@ const upload = multer({
     files: 1
   },
   fileFilter: (req, file, cb) => {
+    // Multer v2 expects Error object or null for rejection (no second parameter)
     if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       cb(null, true)
     } else {
-      cb(new Error('Only DOCX files are allowed'), false)
+      cb(new Error('Only DOCX files are allowed'))
     }
   }
 })

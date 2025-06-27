@@ -2,10 +2,18 @@
 nixPkgs = ['nodejs-18_x', 'npm-9_x']
 
 [phases.install]
-cmds = ['npm ci']
+cmds = [
+  'npm config set cache /tmp/.npm-cache',
+  'npm config set prefer-offline true',
+  'npm ci --only=production --no-audit --no-fund'
+]
 
 [phases.build]
 cmds = ['npm run build --if-present']
 
 [start]
 cmd = 'npm start'
+
+[variables]
+NPM_CONFIG_CACHE = '/tmp/.npm-cache'
+NPM_CONFIG_UPDATE_NOTIFIER = 'false'
