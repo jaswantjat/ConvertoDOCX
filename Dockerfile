@@ -25,7 +25,7 @@ RUN npm config set cache /tmp/.npm-cache && \
     npm config set fund false
 
 # Install dependencies with clean cache
-RUN npm ci --only=production --no-audit --no-fund && \
+RUN npm ci --omit=dev --no-audit --no-fund && \
     npm cache clean --force
 
 # Copy application code
