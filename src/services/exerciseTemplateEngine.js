@@ -31,6 +31,16 @@ class ExerciseTemplateEngine {
     try {
       const processed = JSON.parse(JSON.stringify(exerciseData)) // Deep clone
 
+      // Parse instructions from questionDescription if instructions are generic
+      if (processed.questionDescription && this.hasGenericInstructions(processed.instructions)) {
+        const parsedInstructions = this.parseInstructionsFromText(processed.questionDescription)
+        if (parsedInstructions.length > 0) {
+          processed.instructions = parsedInstructions
+          // Clean the questionDescription to remove the instruction section
+          processed.questionDescription = this.cleanQuestionDescription(processed.questionDescription)
+        }
+      }
+
       // Clean up language inconsistencies in question description
       if (processed.questionDescription && options.language) {
         processed.questionDescription = this.cleanLanguageReferences(processed.questionDescription, options.language)
@@ -42,13 +52,16 @@ class ExerciseTemplateEngine {
         processed.formattedCodeBlock = this.formatCodeWithBlanks(processed.codeBlock)
       }
 
-      // Process answers for syntax highlighting with enhanced error handling
+      // Process answers for syntax highlighting with enhanced error handling and validation
       if (processed.answers && Array.isArray(processed.answers)) {
         processed.answers = processed.answers.map((answer, index) => {
-          // Ensure answer has required fields with fallbacks
+          // Ensure answer has required fields with comprehensive fallbacks
           const safeAnswer = {
-            answerNumber: answer.answerNumber || (index + 1),
-            answerCode: answer.answerCode || answer.answer || `Answer ${index + 1}`,
+            answerNumber: this.validateNumber(answer.answerNumber, index + 1),
+            answerCode: this.validateString(
+              answer.answerCode || answer.answer || answer.code || answer.solution,
+              `Answer ${index + 1}`
+            ),
             ...answer
           }
 
@@ -59,16 +72,27 @@ class ExerciseTemplateEngine {
               safeAnswer.answerCode,
             formattedAnswer: this.formatAnswerCode(safeAnswer.answerCode)
           }
-        }).filter(answer => answer.answerCode && answer.answerCode.trim() !== '') // Remove empty answers
+        }).filter(answer =>
+          answer.answerCode &&
+          answer.answerCode.trim() !== '' &&
+          answer.answerCode !== 'undefined' &&
+          !answer.answerCode.includes('undefined')
+        ) // Remove empty or undefined answers
+      } else {
+        // Ensure we always have at least basic answer structure
+        processed.answers = []
       }
 
-      // Process instructions with enhanced error handling
+      // Process instructions with enhanced error handling and validation
       if (processed.instructions && Array.isArray(processed.instructions)) {
         processed.instructions = processed.instructions.map((instruction, index) => {
-          // Ensure instruction has required fields with fallbacks
+          // Ensure instruction has required fields with comprehensive fallbacks
           const safeInstruction = {
-            blankNumber: instruction.blankNumber || (index + 1),
-            instruction: instruction.instruction || instruction.text || `Complete blank ${index + 1}`,
+            blankNumber: this.validateNumber(instruction.blankNumber, index + 1),
+            instruction: this.validateString(
+              instruction.instruction || instruction.text,
+              `Complete blank ${index + 1}`
+            ),
             ...instruction
           }
 
@@ -76,7 +100,19 @@ class ExerciseTemplateEngine {
             ...safeInstruction,
             formattedInstruction: this.formatInstruction(safeInstruction.instruction)
           }
-        }).filter(inst => inst.instruction && inst.instruction.trim() !== '') // Remove empty instructions
+        }).filter(inst =>
+          inst.instruction &&
+          inst.instruction.trim() !== '' &&
+          inst.instruction !== 'undefined' &&
+          !inst.instruction.includes('undefined')
+        ) // Remove empty or undefined instructions
+      } else {
+        // Ensure we always have at least one instruction
+        processed.instructions = [{
+          blankNumber: 1,
+          instruction: "Complete the missing code",
+          formattedInstruction: "Complete the missing code"
+        }]
       }
 
       // Add metadata
@@ -443,6 +479,114 @@ class ExerciseTemplateEngine {
    */
   getAvailableThemes() {
     return Object.keys(this.themes)
+  }
+
+  /**
+   * Check if instructions array contains only generic placeholders
+   * @param {Array} instructions - Instructions array to check
+   * @returns {boolean} True if instructions are generic
+   */
+  hasGenericInstructions(instructions) {
+    if (!instructions || !Array.isArray(instructions) || instructions.length === 0) {
+      return true
+    }
+
+    // Check if all instructions are generic patterns
+    return instructions.every(inst => {
+      const instruction = inst.instruction || inst.text || ''
+      return instruction.match(/^Complete blank \d+$/i) ||
+             instruction.match(/^Complete the missing code$/i) ||
+             instruction.trim() === ''
+    })
+  }
+
+  /**
+   * Parse detailed instructions from questionDescription text
+   * @param {string} questionText - Question description containing instructions
+   * @returns {Array} Array of parsed instruction objects
+   */
+  parseInstructionsFromText(questionText) {
+    const instructions = []
+
+    // Pattern to match "At Blank X: instruction text"
+    const instructionPattern = /At Blank (\d+):\s*([^\n]+)/gi
+    let match
+
+    while ((match = instructionPattern.exec(questionText)) !== null) {
+      const blankNumber = parseInt(match[1])
+      const instruction = match[2].trim()
+
+      if (instruction && instruction.length > 0) {
+        instructions.push({
+          blankNumber: blankNumber,
+          instruction: instruction
+        })
+      }
+    }
+
+    // Sort by blank number to ensure correct order
+    instructions.sort((a, b) => a.blankNumber - b.blankNumber)
+
+    logger.info({
+      message: 'Parsed instructions from question description',
+      count: instructions.length,
+      instructions: instructions.map(i => `Blank ${i.blankNumber}: ${i.instruction.substring(0, 50)}...`)
+    })
+
+    return instructions
+  }
+
+  /**
+   * Clean questionDescription by removing the instruction section
+   * @param {string} questionText - Original question text
+   * @returns {string} Cleaned question text
+   */
+  cleanQuestionDescription(questionText) {
+    // Remove the "Complete the code using the instructions:" section and everything after it
+    const cleanText = questionText
+      .replace(/Complete the code using the instructions:\s*[\s\S]*$/i, '')
+      .replace(/At Blank \d+:[\s\S]*$/i, '')
+      .trim()
+
+    return cleanText || questionText // Return original if cleaning results in empty string
+  }
+
+  /**
+   * Validate and sanitize string values to prevent undefined in output
+   * @param {any} value - Value to validate
+   * @param {string} fallback - Fallback value if validation fails
+   * @returns {string} Validated string
+   */
+  validateString(value, fallback = '') {
+    if (value === null || value === undefined || value === 'undefined') {
+      return fallback
+    }
+
+    const stringValue = String(value).trim()
+    if (stringValue === '' || stringValue === 'undefined') {
+      return fallback
+    }
+
+    return stringValue
+  }
+
+  /**
+   * Validate and sanitize number values
+   * @param {any} value - Value to validate
+   * @param {number} fallback - Fallback value if validation fails
+   * @returns {number} Validated number
+   */
+  validateNumber(value, fallback = 1) {
+    if (value === null || value === undefined || value === 'undefined') {
+      return fallback
+    }
+
+    const numValue = parseInt(value)
+    if (isNaN(numValue) || numValue < 1) {
+      return fallback
+    }
+
+    return numValue
   }
 
   /**
