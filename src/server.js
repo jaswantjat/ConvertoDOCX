@@ -15,6 +15,9 @@ const exerciseManagementController = require('./controllers/exerciseManagementCo
 const app = express()
 const PORT = process.env.PORT || 3000
 
+// Trust proxy for Railway deployment (fixes X-Forwarded-For header warning)
+app.set('trust proxy', true)
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
