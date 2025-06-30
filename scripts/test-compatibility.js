@@ -9,11 +9,19 @@ const path = require('path')
 
 async function testCompatibility() {
   console.log('🧪 Testing compatibility after dependency updates...\n')
-  
+
   const baseUrl = process.env.TEST_URL || 'http://localhost:3000'
   const apiKey = process.env.API_KEY || 'test-key-123'
-  
+
   const tests = []
+
+  // Create test template if it doesn't exist
+  const { createTestTemplate } = require('./create-test-template')
+  try {
+    await createTestTemplate()
+  } catch (error) {
+    console.log('Note: Test template creation skipped (may already exist)')
+  }
   
   try {
     // Test 1: Health check

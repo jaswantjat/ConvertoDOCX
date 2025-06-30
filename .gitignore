@@ -113,13 +113,18 @@ test-output/
 *.test.html
 
 # Generated exercise files (keep examples but ignore test outputs)
-examples/generated-*.html
-examples/generated-*.docx
-examples/test-*.html
-examples/test-*.docx
+examples/generated-*
+examples/test-*
+**/generated-*
+**/test-output*
 
 # Upload directories (if storing uploaded templates locally)
 user-templates/
+
+# Temporary template files created during testing
+src/templates/saved-template.docx
+src/templates/test-*.docx
+src/templates/*-test.*
 
 # Database files (if using local database)
 *.db

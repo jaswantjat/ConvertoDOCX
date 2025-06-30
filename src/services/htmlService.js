@@ -137,7 +137,7 @@ class HtmlService {
    */
   processCodingExerciseData(exerciseData, options = {}) {
     const processed = this.processDataForHtml(exerciseData, options)
-    
+
     // Add additional processing for coding exercises
     if (processed.instructions && Array.isArray(processed.instructions)) {
       processed.instructions = processed.instructions.map((instruction, index) => ({
@@ -149,7 +149,11 @@ class HtmlService {
     if (processed.answers && Array.isArray(processed.answers)) {
       processed.answers = processed.answers.map((answer, index) => ({
         ...answer,
-        answerNumber: answer.answerNumber || (index + 1)
+        answerNumber: answer.answerNumber || (index + 1),
+        // Ensure highlighted code is properly set for each answer
+        highlightedCode: options.language ?
+          this.highlightCode(answer.answerCode || answer.answer, options.language) :
+          null
       }))
     }
 
@@ -255,9 +259,8 @@ class HtmlService {
     <div class="instruction">At Blank {{blankNumber}}: {{instruction}}</div>
     {{/instructions}}
 
-    <div class="code-header">A few lines in the Sample Script are missing (Enter your code here). You need to complete the code as per the given instructions.</div>
-    
     <div class="code-header">Sample Script:</div>
+    <p style="margin-bottom: 10px; color: #586069; font-size: 14px;">A few lines in the Sample Script are missing (Enter your code here). You need to complete the code as per the given instructions.</p>
     <div class="code-block">
         {{#highlightedCode}}
         <pre><code>{{{highlightedCode}}}</code></pre>
@@ -270,7 +273,7 @@ class HtmlService {
     <div class="answers-header">Answers:</div>
     {{#answers}}
     <div class="answer">
-        <span class="answer-number">{{answerNumber}}.</span> 
+        <span class="answer-number">{{answerNumber}}.</span>
         {{#highlightedCode}}
         <code>{{{highlightedCode}}}</code>
         {{/highlightedCode}}
