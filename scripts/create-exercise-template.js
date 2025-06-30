@@ -128,6 +128,20 @@ function createCodingExerciseTemplate() {
           <w:b/>
           <w:sz w:val="22"/>
         </w:rPr>
+        <w:t>Sample Script:</w:t>
+      </w:r>
+    </w:p>
+
+    <!-- Sample Script Description -->
+    <w:p>
+      <w:pPr>
+        <w:spacing w:before="120" w:after="120"/>
+      </w:pPr>
+      <w:r>
+        <w:rPr>
+          <w:sz w:val="20"/>
+          <w:color w:val="666666"/>
+        </w:rPr>
         <w:t>A few lines in the Sample Script are missing (Enter your code here). You need to complete the code as per the given instructions.</w:t>
       </w:r>
     </w:p>

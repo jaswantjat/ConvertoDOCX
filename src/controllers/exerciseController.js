@@ -56,7 +56,7 @@ const generateExerciseSchema = Joi.object({
     includeLineNumbers: Joi.boolean().default(false),
     theme: Joi.string().default('github')
   }).default({})
-})
+}).unknown(true) // Allow additional fields from n8n workflows
 
 const exerciseController = {
   /**
