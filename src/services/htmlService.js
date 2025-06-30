@@ -3,6 +3,7 @@ const hljs = require('highlight.js')
 const fs = require('fs')
 const path = require('path')
 const logger = require('../utils/logger')
+const exerciseTemplateEngine = require('./exerciseTemplateEngine')
 
 class HtmlService {
   constructor() {
@@ -130,30 +131,23 @@ class HtmlService {
   }
 
   /**
-   * Process coding exercise data specifically
+   * Process coding exercise data specifically using enhanced template engine
    * @param {Object} exerciseData - Exercise data
    * @param {Object} options - Processing options
    * @returns {Object} Processed exercise data
    */
   processCodingExerciseData(exerciseData, options = {}) {
-    const processed = this.processDataForHtml(exerciseData, options)
+    // Use the enhanced exercise template engine for consistent processing
+    const processed = exerciseTemplateEngine.processExerciseData(exerciseData, options)
 
-    // Add additional processing for coding exercises
-    if (processed.instructions && Array.isArray(processed.instructions)) {
-      processed.instructions = processed.instructions.map((instruction, index) => ({
-        ...instruction,
-        blankNumber: instruction.blankNumber || (index + 1)
-      }))
-    }
-
+    // Add HTML-specific processing for syntax highlighting
     if (processed.answers && Array.isArray(processed.answers)) {
       processed.answers = processed.answers.map((answer, index) => ({
         ...answer,
-        answerNumber: answer.answerNumber || (index + 1),
-        // Ensure highlighted code is properly set for each answer
+        // Ensure highlighted code is properly set for each answer (override template engine)
         highlightedCode: options.language ?
           this.highlightCode(answer.answerCode || answer.answer, options.language) :
-          null
+          answer.answerCode || answer.answer
       }))
     }
 

@@ -31,31 +31,52 @@ class ExerciseTemplateEngine {
     try {
       const processed = JSON.parse(JSON.stringify(exerciseData)) // Deep clone
 
+      // Clean up language inconsistencies in question description
+      if (processed.questionDescription && options.language) {
+        processed.questionDescription = this.cleanLanguageReferences(processed.questionDescription, options.language)
+      }
+
       // Process code block for syntax highlighting
       if (processed.codeBlock && options.language) {
         processed.highlightedCode = this.highlightCode(processed.codeBlock, options.language)
         processed.formattedCodeBlock = this.formatCodeWithBlanks(processed.codeBlock)
       }
 
-      // Process answers for syntax highlighting
+      // Process answers for syntax highlighting with enhanced error handling
       if (processed.answers && Array.isArray(processed.answers)) {
-        processed.answers = processed.answers.map((answer, index) => ({
-          ...answer,
-          answerNumber: answer.answerNumber || (index + 1),
-          highlightedCode: options.language ? 
-            this.highlightCode(answer.answerCode, options.language) : 
-            answer.answerCode,
-          formattedAnswer: this.formatAnswerCode(answer.answerCode)
-        }))
+        processed.answers = processed.answers.map((answer, index) => {
+          // Ensure answer has required fields with fallbacks
+          const safeAnswer = {
+            answerNumber: answer.answerNumber || (index + 1),
+            answerCode: answer.answerCode || answer.answer || `Answer ${index + 1}`,
+            ...answer
+          }
+
+          return {
+            ...safeAnswer,
+            highlightedCode: options.language ?
+              this.highlightCode(safeAnswer.answerCode, options.language) :
+              safeAnswer.answerCode,
+            formattedAnswer: this.formatAnswerCode(safeAnswer.answerCode)
+          }
+        }).filter(answer => answer.answerCode && answer.answerCode.trim() !== '') // Remove empty answers
       }
 
-      // Process instructions
+      // Process instructions with enhanced error handling
       if (processed.instructions && Array.isArray(processed.instructions)) {
-        processed.instructions = processed.instructions.map((instruction, index) => ({
-          ...instruction,
-          blankNumber: instruction.blankNumber || (index + 1),
-          formattedInstruction: this.formatInstruction(instruction.instruction)
-        }))
+        processed.instructions = processed.instructions.map((instruction, index) => {
+          // Ensure instruction has required fields with fallbacks
+          const safeInstruction = {
+            blankNumber: instruction.blankNumber || (index + 1),
+            instruction: instruction.instruction || instruction.text || `Complete blank ${index + 1}`,
+            ...instruction
+          }
+
+          return {
+            ...safeInstruction,
+            formattedInstruction: this.formatInstruction(safeInstruction.instruction)
+          }
+        }).filter(inst => inst.instruction && inst.instruction.trim() !== '') // Remove empty instructions
       }
 
       // Add metadata
@@ -422,6 +443,54 @@ class ExerciseTemplateEngine {
    */
   getAvailableThemes() {
     return Object.keys(this.themes)
+  }
+
+  /**
+   * Clean up language inconsistencies in text
+   * @param {string} text - Text to clean
+   * @param {string} targetLanguage - Target programming language
+   * @returns {string} Cleaned text
+   */
+  cleanLanguageReferences(text, targetLanguage) {
+    if (!text || !targetLanguage) return text
+
+    const languageMap = {
+      'python': 'Python',
+      'javascript': 'JavaScript',
+      'java': 'Java',
+      'cpp': 'C++',
+      'csharp': 'C#',
+      'go': 'Go',
+      'rust': 'Rust',
+      'php': 'PHP',
+      'ruby': 'Ruby',
+      'swift': 'Swift'
+    }
+
+    const targetLangName = languageMap[targetLanguage.toLowerCase()] || targetLanguage
+
+    // Remove contradictory language references
+    let cleanedText = text
+
+    // Replace "Java program using python" type inconsistencies
+    const inconsistentPatterns = [
+      /\b(Java|JavaScript|C\+\+|C#|Go|Rust|PHP|Ruby|Swift)\s+program\s+using\s+python\b/gi,
+      /\b(Java|JavaScript|C\+\+|C#|Go|Rust|PHP|Ruby|Swift)\s+application\s+using\s+python\b/gi,
+      /\bdeveloping\s+a\s+(Java|JavaScript|C\+\+|C#|Go|Rust|PHP|Ruby|Swift)\s+program\s+using\s+python\b/gi
+    ]
+
+    inconsistentPatterns.forEach(pattern => {
+      cleanedText = cleanedText.replace(pattern, `${targetLangName} program`)
+    })
+
+    // Clean up Java-specific syntax in non-Java exercises
+    if (targetLanguage.toLowerCase() !== 'java') {
+      cleanedText = cleanedText.replace(/List<[^>]+>/g, 'list')
+      cleanedText = cleanedText.replace(/ArrayList<[^>]+>/g, 'list')
+      cleanedText = cleanedText.replace(/\bnew\s+ArrayList<[^>]*>\(\)/g, '[]')
+    }
+
+    return cleanedText
   }
 
   /**
