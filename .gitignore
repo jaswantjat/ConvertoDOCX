@@ -112,6 +112,12 @@ test-output/
 *.test.docx
 *.test.html
 
+# Test output files in root directory
+test-output.docx
+api-test-output.docx
+*-test-output.docx
+*-output.docx
+
 # Generated exercise files (keep examples but ignore test outputs)
 examples/generated-*
 examples/test-*
