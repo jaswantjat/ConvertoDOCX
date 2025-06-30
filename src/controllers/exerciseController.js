@@ -1,6 +1,7 @@
 const Joi = require('joi')
 const docxService = require('../services/docxService')
 const htmlService = require('../services/htmlService')
+const exerciseTemplateEngine = require('../services/exerciseTemplateEngine')
 const logger = require('../utils/logger')
 
 // Validation schema for coding exercises
@@ -111,9 +112,15 @@ const exerciseController = {
       } else {
         // Generate DOCX exercise
         const templateName = 'coding-exercise-template.docx'
-        
+
+        // Process exercise data for DOCX generation (same as HTML processing)
+        const processedExerciseData = exerciseTemplateEngine.processExerciseData(exerciseData, {
+          language,
+          ...options
+        })
+
         // Validate template exists
-        const validation = await docxService.validateTemplateData(templateName, exerciseData)
+        const validation = await docxService.validateTemplateData(templateName, processedExerciseData)
         if (!validation.valid) {
           return res.status(400).json({
             success: false,
@@ -125,7 +132,7 @@ const exerciseController = {
         }
 
         // Generate DOCX
-        const docxBuffer = await docxService.generateFromTemplate(templateName, exerciseData, options)
+        const docxBuffer = await docxService.generateFromTemplate(templateName, processedExerciseData, options)
 
         // Set response headers for file download
         const filename = `${exerciseData.topic.replace(/\s+/g, '_')}_${exerciseData.subtopic.replace(/\s+/g, '_')}_${Date.now()}.docx`
