@@ -28,9 +28,8 @@ const generateExerciseSchema = Joi.object({
       blankNumber: Joi.number().integer().min(1).required(),
       instruction: Joi.string().required()
     })
-  ).min(1).required().messages({
-    'array.min': 'At least one instruction is required',
-    'any.required': 'Instructions are required'
+  ).min(1).optional().messages({
+    'array.min': 'At least one instruction is required'
   }),
   codeBlock: Joi.string().required().messages({
     'string.empty': 'Code block is required',
@@ -77,6 +76,11 @@ const exerciseController = {
       }
 
       const { format, language, options, ...exerciseData } = value
+
+      // Ensure instructions array exists (will be processed by exerciseTemplateEngine)
+      if (!exerciseData.instructions || exerciseData.instructions.length === 0) {
+        exerciseData.instructions = [{ blankNumber: 1, instruction: "Complete the missing code" }]
+      }
 
       logger.info({
         message: `Coding exercise generation request received`,
