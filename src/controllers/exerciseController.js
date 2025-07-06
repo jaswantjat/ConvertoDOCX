@@ -40,10 +40,20 @@ const generateExerciseSchema = Joi.object({
       answerNumber: Joi.number().integer().min(1).required(),
       answerCode: Joi.string().required()
     })
-  ).min(1).required().messages({
-    'array.min': 'At least one answer is required',
-    'any.required': 'Answers are required'
+  ).min(1).optional().messages({
+    'array.min': 'At least one answer is required'
   }),
+  // Individual answer fields (alternative to answers array)
+  answer1: Joi.string().optional(),
+  answer2: Joi.string().optional(),
+  answer3: Joi.string().optional(),
+  answer4: Joi.string().optional(),
+  answer5: Joi.string().optional(),
+  answer6: Joi.string().optional(),
+  answer7: Joi.string().optional(),
+  answer8: Joi.string().optional(),
+  answer9: Joi.string().optional(),
+  answer10: Joi.string().optional(),
   format: Joi.string().valid('docx', 'html').default('html').messages({
     'any.only': 'Format must be either "docx" or "html"'
   }),
@@ -76,6 +86,24 @@ const exerciseController = {
       }
 
       const { format, language, options, ...exerciseData } = value
+
+      // Custom validation: ensure either answers array OR individual answer fields are provided
+      const hasAnswersArray = exerciseData.answers && Array.isArray(exerciseData.answers) && exerciseData.answers.length > 0
+      const hasIndividualAnswers = [
+        exerciseData.answer1, exerciseData.answer2, exerciseData.answer3,
+        exerciseData.answer4, exerciseData.answer5, exerciseData.answer6,
+        exerciseData.answer7, exerciseData.answer8, exerciseData.answer9, exerciseData.answer10
+      ].some(answer => answer && answer.toString().trim() !== '')
+
+      if (!hasAnswersArray && !hasIndividualAnswers) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            message: 'Validation error',
+            details: ['Either answers array or individual answer fields (answer1, answer2, etc.) are required']
+          }
+        })
+      }
 
       // Ensure instructions array exists (will be processed by exerciseTemplateEngine)
       if (!exerciseData.instructions || exerciseData.instructions.length === 0) {
