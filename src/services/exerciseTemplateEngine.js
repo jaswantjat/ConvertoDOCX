@@ -31,6 +31,9 @@ class ExerciseTemplateEngine {
     try {
       const processed = JSON.parse(JSON.stringify(exerciseData)) // Deep clone
 
+      // Convert individual answer fields (answer1, answer2, etc.) to answers array if needed
+      processed.answers = this.normalizeAnswersData(processed)
+
       // Parse instructions from questionDescription if instructions are generic
       if (processed.questionDescription && this.hasGenericInstructions(processed.instructions)) {
         const parsedInstructions = this.parseInstructionsFromText(processed.questionDescription)
@@ -635,6 +638,43 @@ class ExerciseTemplateEngine {
     }
 
     return cleanedText
+  }
+
+  /**
+   * Normalize answers data - convert individual answer fields to answers array
+   * @param {Object} data - Exercise data that may contain answer1, answer2, etc.
+   * @returns {Array} Normalized answers array
+   */
+  normalizeAnswersData(data) {
+    // If answers array already exists and is valid, use it
+    if (data.answers && Array.isArray(data.answers) && data.answers.length > 0) {
+      return data.answers
+    }
+
+    // Check for individual answer fields (answer1, answer2, etc.)
+    const individualAnswers = []
+    for (let i = 1; i <= 10; i++) { // Check up to answer10
+      const answerKey = `answer${i}`
+      if (data[answerKey] && data[answerKey].trim() !== '') {
+        individualAnswers.push({
+          answerNumber: i,
+          answerCode: data[answerKey].trim()
+        })
+      }
+    }
+
+    // If we found individual answers, use them
+    if (individualAnswers.length > 0) {
+      logger.info({
+        message: 'Converted individual answer fields to answers array',
+        count: individualAnswers.length,
+        answerNumbers: individualAnswers.map(a => a.answerNumber)
+      })
+      return individualAnswers
+    }
+
+    // Fallback: return empty array or existing answers
+    return data.answers || []
   }
 
   /**
