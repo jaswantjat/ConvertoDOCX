@@ -60,19 +60,19 @@ class DocxService {
       // Create a new PizZip instance with the template
       const zip = new PizZip(templateBuffer)
       
-      // Create docxtemplater instance with enhanced loop configuration
+      // Create docxtemplater instance with optimized configuration for loop processing
       const doc = new Docxtemplater(zip, {
         paragraphLoop: true,
         linebreaks: true,
-        // Simple nullGetter to handle undefined values
+        // Simplified nullGetter - let docxtemplater handle loops naturally
         nullGetter: function(part) {
-          // Log for debugging
-          logger.warn({
-            message: 'Docxtemplater nullGetter called - template/data mismatch',
-            tag: part ? part.value : 'unknown',
-            raw: part ? part.raw : 'unknown'
-          })
-
+          // Only log unexpected missing values, not loop iteration variables
+          if (part && part.value && !['answerNumber', 'answerCode', 'blankNumber', 'instruction', 'questionNumber'].includes(part.value)) {
+            logger.warn({
+              message: 'Docxtemplater nullGetter called - template/data mismatch',
+              tag: part ? part.value : 'unknown'
+            })
+          }
           // Return empty string to avoid "undefined" in output
           return ''
         },
@@ -82,8 +82,11 @@ class DocxService {
       })
 
       try {
+        // Preprocess data to ensure docxtemplater compatibility
+        const processedData = this.preprocessDataForDocxtemplater(data)
+
         // Set data and render the document (new API)
-        doc.render(data)
+        doc.render(processedData)
       } catch (error) {
         // Handle template rendering errors
         if (error.properties && error.properties.errors instanceof Array) {
@@ -196,6 +199,50 @@ class DocxService {
   }
 
   /**
+   * Preprocess data to ensure docxtemplater compatibility
+   * @param {Object} data - Raw data object
+   * @returns {Object} Processed data object
+   */
+  preprocessDataForDocxtemplater(data) {
+    const processed = JSON.parse(JSON.stringify(data)) // Deep clone
+
+    // Ensure arrays are properly structured for docxtemplater loops
+    if (processed.answers && Array.isArray(processed.answers)) {
+      processed.answers = processed.answers.map(answer => ({
+        // Ensure all required fields exist with fallbacks
+        answerNumber: answer.answerNumber || 1,
+        answerCode: answer.answerCode || answer.answer || answer.code || '',
+        // Keep any additional fields
+        ...answer
+      })).filter(answer => answer.answerCode && answer.answerCode.trim() !== '')
+    }
+
+    if (processed.instructions && Array.isArray(processed.instructions)) {
+      processed.instructions = processed.instructions.map(instruction => ({
+        // Ensure all required fields exist with fallbacks
+        blankNumber: instruction.blankNumber || 1,
+        instruction: instruction.instruction || instruction.text || '',
+        // Keep any additional fields
+        ...instruction
+      })).filter(inst => inst.instruction && inst.instruction.trim() !== '')
+    }
+
+    // Ensure questionNumber exists
+    if (!processed.questionNumber) {
+      processed.questionNumber = 1
+    }
+
+    logger.info({
+      message: 'Data preprocessed for docxtemplater',
+      answersCount: processed.answers ? processed.answers.length : 0,
+      instructionsCount: processed.instructions ? processed.instructions.length : 0,
+      hasQuestionNumber: !!processed.questionNumber
+    })
+
+    return processed
+  }
+
+  /**
    * Create a minimal DOCX template structure
    * @param {Object} content - Content structure
    * @returns {string} Base64 encoded DOCX template
@@ -204,7 +251,7 @@ class DocxService {
     // This is a simplified approach - in a real implementation,
     // you might want to use a more sophisticated template creation method
     const templateText = content.text || 'Hello {name}!'
-    
+
     // For now, we'll use a basic template approach
     // In production, you might want to create actual DOCX structure
     return templateText
