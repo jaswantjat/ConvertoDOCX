@@ -35,13 +35,13 @@ class ExerciseTemplateEngine {
       processed.answers = this.normalizeAnswersData(processed)
 
       // Parse instructions from questionDescription if instructions are generic
-      if (processed.questionDescription && this.hasGenericInstructions(processed.instructions)) {
-        const parsedInstructions = this.parseInstructionsFromText(processed.questionDescription)
-        if (parsedInstructions.length > 0) {
-          processed.instructions = parsedInstructions
-          // Clean the questionDescription to remove the instruction section
-          processed.questionDescription = this.cleanQuestionDescription(processed.questionDescription)
-        }
+      if (processed.questionDescription) {
+          const parsedInstructions = this.parseInstructionsFromText(processed.questionDescription);
+          if (parsedInstructions.length > 0) {
+              processed.instructions = parsedInstructions;
+              // Clean the questionDescription to remove the instruction section
+              processed.questionDescription = this.cleanQuestionDescription(processed.questionDescription);
+          }
       }
 
       // Clean up language inconsistencies in question description
@@ -197,7 +197,7 @@ class ExerciseTemplateEngine {
   formatInstruction(instruction) {
     // Add emphasis to important parts
     return instruction
-      .replace(/\b(Create|Parse|Find|Form|Print)\b/g, '<strong>$1</strong>')
+      .replace(/(Create|Parse|Find|Form|Print)/g, '<strong>$1</strong>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
   }
 
@@ -512,7 +512,8 @@ class ExerciseTemplateEngine {
     const instructions = []
 
     // Pattern to match "At Blank X: instruction text"
-    const instructionPattern = /At Blank (\d+):\s*([^\n]+)/gi
+    const instructionPattern = /At Blank (\d+):\s*([^
+]+)/gi
     let match
 
     while ((match = instructionPattern.exec(questionText)) !== null) {
@@ -621,9 +622,9 @@ class ExerciseTemplateEngine {
 
     // Replace "Java program using python" type inconsistencies
     const inconsistentPatterns = [
-      /\b(Java|JavaScript|C\+\+|C#|Go|Rust|PHP|Ruby|Swift)\s+program\s+using\s+python\b/gi,
-      /\b(Java|JavaScript|C\+\+|C#|Go|Rust|PHP|Ruby|Swift)\s+application\s+using\s+python\b/gi,
-      /\bdeveloping\s+a\s+(Java|JavaScript|C\+\+|C#|Go|Rust|PHP|Ruby|Swift)\s+program\s+using\s+python\b/gi
+      /(Java|JavaScript|C\+\+|C#|Go|Rust|PHP|Ruby|Swift)\s+program\s+using\s+python/gi,
+      /(Java|JavaScript|C\+\+|C#|Go|Rust|PHP|Ruby|Swift)\s+application\s+using\s+python/gi,
+      /developing\s+a\s+(Java|JavaScript|C\+\+|C#|Go|Rust|PHP|Ruby|Swift)\s+program\s+using\s+python/gi
     ]
 
     inconsistentPatterns.forEach(pattern => {
@@ -634,7 +635,7 @@ class ExerciseTemplateEngine {
     if (targetLanguage.toLowerCase() !== 'java') {
       cleanedText = cleanedText.replace(/List<[^>]+>/g, 'list')
       cleanedText = cleanedText.replace(/ArrayList<[^>]+>/g, 'list')
-      cleanedText = cleanedText.replace(/\bnew\s+ArrayList<[^>]*>\(\)/g, '[]')
+      cleanedText = cleanedText.replace(/new\s+ArrayList<[^>]*>\(\)/g, '[]')
     }
 
     return cleanedText
