@@ -60,10 +60,24 @@ class DocxService {
       // Create a new PizZip instance with the template
       const zip = new PizZip(templateBuffer)
       
-      // Create docxtemplater instance
+      // Create docxtemplater instance with enhanced loop configuration
       const doc = new Docxtemplater(zip, {
         paragraphLoop: true,
         linebreaks: true,
+        // Simple nullGetter to handle undefined values
+        nullGetter: function(part) {
+          // Log for debugging
+          logger.warn({
+            message: 'Docxtemplater nullGetter called - template/data mismatch',
+            tag: part ? part.value : 'unknown',
+            raw: part ? part.raw : 'unknown'
+          })
+
+          // Return empty string to avoid "undefined" in output
+          return ''
+        },
+        // Ensure proper error handling
+        errorLogging: true,
         ...options
       })
 
