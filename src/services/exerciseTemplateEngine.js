@@ -1,5 +1,5 @@
 const hljs = require('highlight.js')
-const fs = require('fs')
+const fs = 'fs'
 const path = require('path')
 const logger = require('../utils/logger')
 
