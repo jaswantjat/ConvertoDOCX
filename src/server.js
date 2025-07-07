@@ -15,8 +15,15 @@ const exerciseManagementController = require('./controllers/exerciseManagementCo
 const app = express()
 const PORT = process.env.PORT || 3000
 
-// Trust proxy for Railway deployment (fixes X-Forwarded-For header warning)
-app.set('trust proxy', true)
+// Trust proxy configuration for Railway deployment
+// Only trust Railway's proxy, not arbitrary proxies
+if (process.env.NODE_ENV === 'production') {
+  // Railway uses specific proxy configuration
+  app.set('trust proxy', 1) // Trust first proxy only
+} else {
+  // Development mode - trust localhost
+  app.set('trust proxy', 'loopback')
+}
 
 // Security middleware
 app.use(helmet({
@@ -53,7 +60,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 // Serve static files from public directory
 app.use(express.static('public'))
 
-// Rate limiting
+// Enhanced rate limiting with proper proxy handling
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
@@ -62,7 +69,26 @@ const limiter = rateLimit({
     retryAfter: Math.ceil((parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000) / 1000)
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  // Enhanced key generator for better security
+  keyGenerator: (req) => {
+    // Use the real IP address, considering trusted proxies
+    const ip = req.ip || req.connection.remoteAddress
+    const apiKey = req.headers['x-api-key']
+
+    // Combine IP and API key hash for more granular rate limiting
+    if (apiKey) {
+      const crypto = require('crypto')
+      const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex').substring(0, 8)
+      return `${ip}:${keyHash}`
+    }
+
+    return ip
+  },
+  // Skip rate limiting for health checks
+  skip: (req) => {
+    return req.path === '/health'
+  }
 })
 
 app.use('/api/', limiter)
