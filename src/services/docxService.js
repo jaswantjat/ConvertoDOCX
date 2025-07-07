@@ -60,44 +60,13 @@ class DocxService {
       // Create a new PizZip instance with the template
       const zip = new PizZip(templateBuffer)
       
-      // CRITICAL FIX: Enhanced docxtemplater configuration for reliable loop processing
+      // ULTIMATE FIX: Completely disable nullGetter to let docxtemplater handle loops naturally
+      // The nullGetter was interfering with proper loop variable resolution
       const doc = new Docxtemplater(zip, {
         paragraphLoop: true,
         linebreaks: true,
-        // Enhanced nullGetter with comprehensive loop variable handling
-        nullGetter: function(part, scopeManager) {
-          const tag = part ? part.value : 'unknown'
-
-          // Expected loop variables that should not trigger warnings
-          const expectedLoopVars = ['answerNumber', 'answerCode', 'blankNumber', 'instruction', 'questionNumber']
-
-          if (!expectedLoopVars.includes(tag)) {
-            logger.warn({
-              message: 'Docxtemplater nullGetter called - unexpected missing value',
-              tag: tag,
-              context: scopeManager ? 'within-loop' : 'root-level'
-            })
-          }
-
-          // Return empty string to prevent "undefined" in output
-          return ''
-        },
-        // Enhanced error handling for production debugging
-        errorLogging: true,
-        // Add custom resolver for better loop handling
-        resolver: {
-          resolve: function(part, scope) {
-            // Handle array access specifically
-            if (part.value === 'answers' && Array.isArray(scope.answers)) {
-              return scope.answers
-            }
-            if (part.value === 'instructions' && Array.isArray(scope.instructions)) {
-              return scope.instructions
-            }
-            // Default resolution
-            return scope[part.value]
-          }
-        },
+        // NO nullGetter - let docxtemplater handle missing values naturally
+        // This allows proper loop variable resolution
         ...options
       })
 
