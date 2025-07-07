@@ -57,27 +57,19 @@ class DocxService {
    */
   async generateFromBuffer(templateBuffer, data, options = {}) {
     try {
-      // Create a new PizZip instance with the template
       const zip = new PizZip(templateBuffer)
       
-      // ULTIMATE FIX: Completely disable nullGetter to let docxtemplater handle loops naturally
-      // The nullGetter was interfering with proper loop variable resolution
       const doc = new Docxtemplater(zip, {
         paragraphLoop: true,
         linebreaks: true,
-        // NO nullGetter - let docxtemplater handle missing values naturally
-        // This allows proper loop variable resolution
         ...options
       })
 
       try {
-        // Preprocess data to ensure docxtemplater compatibility
-        const processedData = this.preprocessDataForDocxtemplater(data)
-
-        // Set data and render the document (new API)
-        doc.render(processedData)
+        // Data is now pre-processed by exerciseTemplateEngine before reaching this service.
+        // No further processing is needed here.
+        doc.render(data)
       } catch (error) {
-        // Handle template rendering errors
         if (error.properties && error.properties.errors instanceof Array) {
           const errorMessages = error.properties.errors.map(err => {
             return `${err.name}: ${err.message} at ${err.properties.part}`
@@ -106,29 +98,6 @@ class DocxService {
     } catch (error) {
       logger.error({
         message: 'Error generating DOCX from buffer',
-        error: error.message,
-        stack: error.stack
-      })
-      throw error
-    }
-  }
-
-  /**
-   * Create a simple DOCX document programmatically
-   * @param {Object} content - Document content structure
-   * @param {Object} options - Generation options
-   * @returns {Buffer} Generated DOCX buffer
-   */
-  async createSimpleDocument(content, options = {}) {
-    try {
-      // Create a minimal DOCX template
-      const templateContent = this.createMinimalTemplate(content)
-      const templateBuffer = Buffer.from(templateContent)
-      
-      return this.generateFromBuffer(templateBuffer, content.data || {}, options)
-    } catch (error) {
-      logger.error({
-        message: 'Error creating simple document',
         error: error.message,
         stack: error.stack
       })
@@ -188,111 +157,6 @@ class DocxService {
   }
 
   /**
-   * Preprocess data to ensure docxtemplater compatibility
-   * @param {Object} data - Raw data object
-   * @returns {Object} Processed data object
-   */
-  preprocessDataForDocxtemplater(data) {
-    const processed = JSON.parse(JSON.stringify(data)) // Deep clone
-
-    // CRITICAL FIX: Ensure arrays are properly structured for docxtemplater loops
-    if (processed.answers && Array.isArray(processed.answers)) {
-      processed.answers = processed.answers.map((answer, index) => {
-        // DEFINITIVE FIX: Handle multiple answer object formats gracefully.
-        let rawAnswerNumber, rawAnswerCode;
-        
-        if (typeof answer === 'object' && answer !== null) {
-            if (answer.answerNumber !== undefined && answer.answerCode !== undefined) {
-                // Handles { answerNumber: 1, answerCode: "..." }
-                rawAnswerNumber = answer.answerNumber;
-                rawAnswerCode = answer.answerCode;
-            } else {
-                // Handles { "1": "..." } by taking the first key/value pair.
-                const key = Object.keys(answer)[0];
-                if (key !== undefined) {
-                    rawAnswerNumber = key;
-                    rawAnswerCode = answer[key];
-                }
-            }
-        }
-        
-        // Fallback for string arrays or other unexpected formats
-        if (rawAnswerCode === undefined) {
-            rawAnswerCode = String(answer);
-        }
-
-        // Create a clean, simple object structure that docxtemplater can handle
-        const cleanAnswer = {
-          answerNumber: Number(rawAnswerNumber) || (index + 1),
-          answerCode: String(rawAnswerCode || '').trim()
-        };
-
-        // Validate the structure
-        if (!cleanAnswer.answerCode || cleanAnswer.answerCode === 'undefined') {
-          logger.warn({
-            message: 'Invalid answer detected and filtered out',
-            index,
-            originalAnswer: answer
-          })
-          return null
-        }
-
-        return cleanAnswer
-      }).filter(answer => answer !== null) // Remove invalid answers
-
-      // Log the final structure for debugging
-      logger.info({
-        message: 'Answers preprocessed for docxtemplater',
-        count: processed.answers.length,
-        structure: processed.answers.map(a => ({ answerNumber: a.answerNumber, answerCodeLength: a.answerCode.length }))
-      })
-    } else {
-      processed.answers = []
-      logger.warn({ message: 'No valid answers array found in data' })
-    }
-
-    if (processed.instructions && Array.isArray(processed.instructions)) {
-      processed.instructions = processed.instructions.map((instruction, index) => ({
-        // Ensure all required fields exist with fallbacks
-        blankNumber: Number(instruction.blankNumber) || (index + 1),
-        instruction: String(instruction.instruction || instruction.text || `Complete blank ${index + 1}`).trim()
-      })).filter(inst => inst.instruction && inst.instruction.trim() !== '' && inst.instruction !== 'undefined')
-    } else {
-      processed.instructions = []
-    }
-
-    // Ensure questionNumber exists
-    if (!processed.questionNumber) {
-      processed.questionNumber = 1
-    }
-
-    logger.info({
-      message: 'Data preprocessed for docxtemplater - CRITICAL FIX APPLIED',
-      answersCount: processed.answers ? processed.answers.length : 0,
-      instructionsCount: processed.instructions ? processed.instructions.length : 0,
-      hasQuestionNumber: !!processed.questionNumber,
-      answersValid: processed.answers && processed.answers.length > 0
-    })
-
-    return processed
-  }
-
-  /**
-   * Create a minimal DOCX template structure
-   * @param {Object} content - Content structure
-   * @returns {string} Base64 encoded DOCX template
-   */
-  createMinimalTemplate(content) {
-    // This is a simplified approach - in a real implementation,
-    // you might want to use a more sophisticated template creation method
-    const templateText = content.text || 'Hello {name}!'
-
-    // For now, we'll use a basic template approach
-    // In production, you might want to create actual DOCX structure
-    return templateText
-  }
-
-  /**
    * Validate template data against template structure
    * @param {string} templateName - Template name
    * @param {Object} data - Data to validate
@@ -309,16 +173,12 @@ class DocxService {
         }
       }
 
-      // Basic validation - check if if data is an object
       if (!data || typeof data !== 'object') {
         return {
           valid: false,
           errors: ['Data must be a valid object']
         }
       }
-
-      // Additional validation logic can be added here
-      // For example, checking required fields, data types, etc.
 
       return {
         valid: true,
