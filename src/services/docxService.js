@@ -198,11 +198,34 @@ class DocxService {
     // CRITICAL FIX: Ensure arrays are properly structured for docxtemplater loops
     if (processed.answers && Array.isArray(processed.answers)) {
       processed.answers = processed.answers.map((answer, index) => {
+        // DEFINITIVE FIX: Handle multiple answer object formats gracefully.
+        let rawAnswerNumber, rawAnswerCode;
+        
+        if (typeof answer === 'object' && answer !== null) {
+            if (answer.answerNumber !== undefined && answer.answerCode !== undefined) {
+                // Handles { answerNumber: 1, answerCode: "..." }
+                rawAnswerNumber = answer.answerNumber;
+                rawAnswerCode = answer.answerCode;
+            } else {
+                // Handles { "1": "..." } by taking the first key/value pair.
+                const key = Object.keys(answer)[0];
+                if (key !== undefined) {
+                    rawAnswerNumber = key;
+                    rawAnswerCode = answer[key];
+                }
+            }
+        }
+        
+        // Fallback for string arrays or other unexpected formats
+        if (rawAnswerCode === undefined) {
+            rawAnswerCode = String(answer);
+        }
+
         // Create a clean, simple object structure that docxtemplater can handle
         const cleanAnswer = {
-          answerNumber: Number(answer.answerNumber) || (index + 1),
-          answerCode: String(answer.answerCode || answer.answer || answer.code || `Answer ${index + 1}`).trim()
-        }
+          answerNumber: Number(rawAnswerNumber) || (index + 1),
+          answerCode: String(rawAnswerCode || '').trim()
+        };
 
         // Validate the structure
         if (!cleanAnswer.answerCode || cleanAnswer.answerCode === 'undefined') {
@@ -286,7 +309,7 @@ class DocxService {
         }
       }
 
-      // Basic validation - check if data is an object
+      // Basic validation - check if if data is an object
       if (!data || typeof data !== 'object') {
         return {
           valid: false,
