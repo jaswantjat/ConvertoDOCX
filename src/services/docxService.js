@@ -60,24 +60,44 @@ class DocxService {
       // Create a new PizZip instance with the template
       const zip = new PizZip(templateBuffer)
       
-      // Create docxtemplater instance with optimized configuration for loop processing
+      // CRITICAL FIX: Enhanced docxtemplater configuration for reliable loop processing
       const doc = new Docxtemplater(zip, {
         paragraphLoop: true,
         linebreaks: true,
-        // Simplified nullGetter - let docxtemplater handle loops naturally
-        nullGetter: function(part) {
-          // Only log unexpected missing values, not loop iteration variables
-          if (part && part.value && !['answerNumber', 'answerCode', 'blankNumber', 'instruction', 'questionNumber'].includes(part.value)) {
+        // Enhanced nullGetter with comprehensive loop variable handling
+        nullGetter: function(part, scopeManager) {
+          const tag = part ? part.value : 'unknown'
+
+          // Expected loop variables that should not trigger warnings
+          const expectedLoopVars = ['answerNumber', 'answerCode', 'blankNumber', 'instruction', 'questionNumber']
+
+          if (!expectedLoopVars.includes(tag)) {
             logger.warn({
-              message: 'Docxtemplater nullGetter called - template/data mismatch',
-              tag: part ? part.value : 'unknown'
+              message: 'Docxtemplater nullGetter called - unexpected missing value',
+              tag: tag,
+              context: scopeManager ? 'within-loop' : 'root-level'
             })
           }
-          // Return empty string to avoid "undefined" in output
+
+          // Return empty string to prevent "undefined" in output
           return ''
         },
-        // Ensure proper error handling
+        // Enhanced error handling for production debugging
         errorLogging: true,
+        // Add custom resolver for better loop handling
+        resolver: {
+          resolve: function(part, scope) {
+            // Handle array access specifically
+            if (part.value === 'answers' && Array.isArray(scope.answers)) {
+              return scope.answers
+            }
+            if (part.value === 'instructions' && Array.isArray(scope.instructions)) {
+              return scope.instructions
+            }
+            // Default resolution
+            return scope[part.value]
+          }
+        },
         ...options
       })
 
@@ -206,25 +226,47 @@ class DocxService {
   preprocessDataForDocxtemplater(data) {
     const processed = JSON.parse(JSON.stringify(data)) // Deep clone
 
-    // Ensure arrays are properly structured for docxtemplater loops
+    // CRITICAL FIX: Ensure arrays are properly structured for docxtemplater loops
     if (processed.answers && Array.isArray(processed.answers)) {
-      processed.answers = processed.answers.map(answer => ({
-        // Ensure all required fields exist with fallbacks
-        answerNumber: answer.answerNumber || 1,
-        answerCode: answer.answerCode || answer.answer || answer.code || '',
-        // Keep any additional fields
-        ...answer
-      })).filter(answer => answer.answerCode && answer.answerCode.trim() !== '')
+      processed.answers = processed.answers.map((answer, index) => {
+        // Create a clean, simple object structure that docxtemplater can handle
+        const cleanAnswer = {
+          answerNumber: Number(answer.answerNumber) || (index + 1),
+          answerCode: String(answer.answerCode || answer.answer || answer.code || `Answer ${index + 1}`).trim()
+        }
+
+        // Validate the structure
+        if (!cleanAnswer.answerCode || cleanAnswer.answerCode === 'undefined') {
+          logger.warn({
+            message: 'Invalid answer detected and filtered out',
+            index,
+            originalAnswer: answer
+          })
+          return null
+        }
+
+        return cleanAnswer
+      }).filter(answer => answer !== null) // Remove invalid answers
+
+      // Log the final structure for debugging
+      logger.info({
+        message: 'Answers preprocessed for docxtemplater',
+        count: processed.answers.length,
+        structure: processed.answers.map(a => ({ answerNumber: a.answerNumber, answerCodeLength: a.answerCode.length }))
+      })
+    } else {
+      processed.answers = []
+      logger.warn({ message: 'No valid answers array found in data' })
     }
 
     if (processed.instructions && Array.isArray(processed.instructions)) {
-      processed.instructions = processed.instructions.map(instruction => ({
+      processed.instructions = processed.instructions.map((instruction, index) => ({
         // Ensure all required fields exist with fallbacks
-        blankNumber: instruction.blankNumber || 1,
-        instruction: instruction.instruction || instruction.text || '',
-        // Keep any additional fields
-        ...instruction
-      })).filter(inst => inst.instruction && inst.instruction.trim() !== '')
+        blankNumber: Number(instruction.blankNumber) || (index + 1),
+        instruction: String(instruction.instruction || instruction.text || `Complete blank ${index + 1}`).trim()
+      })).filter(inst => inst.instruction && inst.instruction.trim() !== '' && inst.instruction !== 'undefined')
+    } else {
+      processed.instructions = []
     }
 
     // Ensure questionNumber exists
@@ -233,10 +275,11 @@ class DocxService {
     }
 
     logger.info({
-      message: 'Data preprocessed for docxtemplater',
+      message: 'Data preprocessed for docxtemplater - CRITICAL FIX APPLIED',
       answersCount: processed.answers ? processed.answers.length : 0,
       instructionsCount: processed.instructions ? processed.instructions.length : 0,
-      hasQuestionNumber: !!processed.questionNumber
+      hasQuestionNumber: !!processed.questionNumber,
+      answersValid: processed.answers && processed.answers.length > 0
     })
 
     return processed
