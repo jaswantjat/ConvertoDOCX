@@ -1,5 +1,5 @@
 const hljs = require('highlight.js')
-const fs = 'fs'
+const fs = require('fs')
 const path = require('path')
 const logger = require('../utils/logger')
 
@@ -513,7 +513,7 @@ class ExerciseTemplateEngine {
 
     // Pattern to match "At Blank X: instruction text"
     const instructionPattern = /At Blank (\d+):\s*([^
-]+)/gi
+]*)/g;
     let match
 
     while ((match = instructionPattern.exec(questionText)) !== null) {
