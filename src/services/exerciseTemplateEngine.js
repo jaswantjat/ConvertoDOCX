@@ -512,8 +512,7 @@ class ExerciseTemplateEngine {
     const instructions = []
 
     // Pattern to match "At Blank X: instruction text"
-    const instructionPattern = /At Blank (\d+):\s*([^
-]*)/g;
+    const instructionPattern = /At Blank (\d+):\s*([^\r\n]*)/g;
     let match
 
     while ((match = instructionPattern.exec(questionText)) !== null) {
