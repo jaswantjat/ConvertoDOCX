@@ -69,6 +69,28 @@ class DocxService {
         // Clean the data to prevent undefined values in the output
         const cleanData = this.cleanDataForTemplate(data)
 
+        // Add detailed logging to track undefined issues
+        logger.info({
+          message: 'Data cleaning completed',
+          originalDataKeys: Object.keys(data),
+          cleanedDataKeys: Object.keys(cleanData),
+          originalAnswersCount: data.answers ? data.answers.length : 0,
+          cleanedAnswersCount: cleanData.answers ? cleanData.answers.length : 0,
+          firstAnswerOriginal: data.answers && data.answers[0] ? Object.keys(data.answers[0]) : [],
+          firstAnswerCleaned: cleanData.answers && cleanData.answers[0] ? Object.keys(cleanData.answers[0]) : [],
+          service: 'docx-generator-api'
+        })
+
+        // Check for any undefined values in cleaned data
+        const undefinedCheck = this.checkForUndefinedValues(cleanData)
+        if (undefinedCheck.hasUndefined) {
+          logger.warn({
+            message: 'Undefined values detected in cleaned data',
+            undefinedFields: undefinedCheck.undefinedFields,
+            service: 'docx-generator-api'
+          })
+        }
+
         // Data is now pre-processed by exerciseTemplateEngine before reaching this service.
         doc.render(cleanData)
       } catch (error) {
@@ -145,6 +167,55 @@ class DocxService {
     delete cleaned.formattedAnswer
 
     return cleaned
+  }
+
+  /**
+   * Check for undefined values in data structure
+   * @param {Object} data - Data to check
+   * @returns {Object} Check results
+   */
+  checkForUndefinedValues(data) {
+    const undefinedFields = []
+
+    // Check top-level fields
+    Object.keys(data).forEach(key => {
+      if (data[key] === undefined) {
+        undefinedFields.push(`root.${key}`)
+      } else if (typeof data[key] === 'string' && data[key].includes('undefined')) {
+        undefinedFields.push(`root.${key} (contains "undefined" text)`)
+      }
+    })
+
+    // Check answers array
+    if (data.answers && Array.isArray(data.answers)) {
+      data.answers.forEach((answer, index) => {
+        Object.keys(answer).forEach(key => {
+          if (answer[key] === undefined) {
+            undefinedFields.push(`answers[${index}].${key}`)
+          } else if (typeof answer[key] === 'string' && answer[key].includes('undefined')) {
+            undefinedFields.push(`answers[${index}].${key} (contains "undefined" text)`)
+          }
+        })
+      })
+    }
+
+    // Check instructions array
+    if (data.instructions && Array.isArray(data.instructions)) {
+      data.instructions.forEach((instruction, index) => {
+        Object.keys(instruction).forEach(key => {
+          if (instruction[key] === undefined) {
+            undefinedFields.push(`instructions[${index}].${key}`)
+          } else if (typeof instruction[key] === 'string' && instruction[key].includes('undefined')) {
+            undefinedFields.push(`instructions[${index}].${key} (contains "undefined" text)`)
+          }
+        })
+      })
+    }
+
+    return {
+      hasUndefined: undefinedFields.length > 0,
+      undefinedFields
+    }
   }
 
   /**

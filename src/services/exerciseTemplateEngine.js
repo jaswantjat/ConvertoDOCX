@@ -81,6 +81,15 @@ class ExerciseTemplateEngine {
           answer.answerCode !== 'undefined' &&
           !answer.answerCode.includes('undefined')
         ) // Remove empty or undefined answers
+
+        // Log processed answers for debugging
+        logger.info({
+          message: 'Answers processed in exerciseTemplateEngine',
+          originalCount: exerciseData.answers ? exerciseData.answers.length : 0,
+          processedCount: processed.answers.length,
+          answerFields: processed.answers.length > 0 ? Object.keys(processed.answers[0]) : [],
+          service: 'docx-generator-api'
+        })
       } else {
         // Ensure we always have at least basic answer structure
         processed.answers = []
@@ -125,6 +134,18 @@ class ExerciseTemplateEngine {
         theme: options.theme || 'github',
         syntaxHighlighting: options.syntaxHighlighting !== false
       }
+
+      // Final logging before returning processed data
+      logger.info({
+        message: 'Final processed data structure',
+        dataKeys: Object.keys(processed),
+        answersCount: processed.answers ? processed.answers.length : 0,
+        instructionsCount: processed.instructions ? processed.instructions.length : 0,
+        hasUndefinedInAnswers: processed.answers ? processed.answers.some(a =>
+          Object.values(a).some(v => v === undefined || String(v).includes('undefined'))
+        ) : false,
+        service: 'docx-generator-api'
+      })
 
       return processed
     } catch (error) {
@@ -535,6 +556,21 @@ class ExerciseTemplateEngine {
       count: instructions.length,
       instructions: instructions.map(i => `Blank ${i.blankNumber}: ${i.instruction.substring(0, 50)}...`)
     })
+
+    // Check for undefined values in parsed instructions
+    const undefinedInstructions = instructions.filter(inst =>
+      inst.blankNumber === undefined ||
+      inst.instruction === undefined ||
+      String(inst.instruction).includes('undefined')
+    )
+    if (undefinedInstructions.length > 0) {
+      logger.warn({
+        message: 'Undefined values detected in parsed instructions',
+        undefinedCount: undefinedInstructions.length,
+        undefinedInstructions,
+        service: 'docx-generator-api'
+      })
+    }
 
     return instructions
   }
