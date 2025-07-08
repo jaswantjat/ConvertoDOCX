@@ -59,10 +59,15 @@ class DocxService {
     try {
       const zip = new PizZip(templateBuffer)
       
+      // DEFINITIVE FIX: Ensure no nullGetter can interfere with loop processing
+      const cleanOptions = { ...options }
+      delete cleanOptions.nullGetter  // Remove any nullGetter that might cause "undefined. undefined"
+
       const doc = new Docxtemplater(zip, {
         paragraphLoop: true,
         linebreaks: true,
-        ...options
+        ...cleanOptions
+        // NO nullGetter - let docxtemplater handle loop variables naturally
       })
 
       // Clean the data to prevent undefined values in the output

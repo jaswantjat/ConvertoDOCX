@@ -206,8 +206,16 @@ class ExerciseTemplateEngine {
    * @returns {string} Formatted answer code
    */
   formatAnswerCode(answerCode) {
-    // Clean up and format answer code
-    return answerCode.trim()
+    // Handle null/undefined values that could cause "undefined. undefined" in output
+    if (answerCode === null || answerCode === undefined) {
+      return ''
+    }
+
+    // Convert to string and clean up
+    const codeString = String(answerCode)
+
+    // Remove any "undefined" text that might have been introduced
+    return codeString.replace(/undefined/g, '').trim()
   }
 
   /**
