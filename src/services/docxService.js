@@ -65,9 +65,10 @@ class DocxService {
         ...options
       })
 
+      // Clean the data to prevent undefined values in the output
+      const cleanData = this.cleanDataForTemplate(data)
+
       try {
-        // Clean the data to prevent undefined values in the output
-        const cleanData = this.cleanDataForTemplate(data)
 
         // Add detailed logging to track undefined issues
         logger.info({
