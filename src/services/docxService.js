@@ -91,6 +91,17 @@ class DocxService {
           })
         }
 
+        // Log the exact data being passed to template render
+        logger.info({
+          message: 'Data being passed to doc.render()',
+          answersData: cleanData.answers ? cleanData.answers.map(a => ({
+            answerNumber: a.answerNumber,
+            answerCode: a.answerCode,
+            hasUndefined: Object.values(a).some(v => v === undefined || String(v).includes('undefined'))
+          })) : [],
+          service: 'docx-generator-api'
+        })
+
         // Data is now pre-processed by exerciseTemplateEngine before reaching this service.
         doc.render(cleanData)
       } catch (error) {
@@ -114,8 +125,9 @@ class DocxService {
 
       logger.info({
         message: 'DOCX generated successfully',
-        dataKeys: Object.keys(data),
-        bufferSize: buffer.length
+        dataKeys: Object.keys(cleanData),
+        bufferSize: buffer.length,
+        service: 'docx-generator-api'
       })
 
       return buffer
