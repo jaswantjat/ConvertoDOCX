@@ -66,9 +66,11 @@ class DocxService {
       })
 
       try {
+        // Clean the data to prevent undefined values in the output
+        const cleanData = this.cleanDataForTemplate(data)
+
         // Data is now pre-processed by exerciseTemplateEngine before reaching this service.
-        // No further processing is needed here.
-        doc.render(data)
+        doc.render(cleanData)
       } catch (error) {
         if (error.properties && error.properties.errors instanceof Array) {
           const errorMessages = error.properties.errors.map(err => {
@@ -103,6 +105,46 @@ class DocxService {
       })
       throw error
     }
+  }
+
+  /**
+   * Clean data to prevent undefined values in template output
+   * @param {Object} data - Data to clean
+   * @returns {Object} Cleaned data
+   */
+  cleanDataForTemplate(data) {
+    const cleaned = JSON.parse(JSON.stringify(data)) // Deep clone
+
+    // Clean answers array - ensure only required fields and no undefined values
+    if (cleaned.answers && Array.isArray(cleaned.answers)) {
+      cleaned.answers = cleaned.answers.map(answer => ({
+        answerNumber: answer.answerNumber || 1,
+        answerCode: String(answer.answerCode || '').replace(/undefined/g, '').trim() || 'Answer not provided'
+      })).filter(answer => answer.answerCode !== 'Answer not provided')
+    }
+
+    // Clean instructions array
+    if (cleaned.instructions && Array.isArray(cleaned.instructions)) {
+      cleaned.instructions = cleaned.instructions.map(instruction => ({
+        blankNumber: instruction.blankNumber || 1,
+        instruction: String(instruction.instruction || '').replace(/undefined/g, '').trim() || 'Complete this blank'
+      })).filter(instruction => instruction.instruction !== 'Complete this blank')
+    }
+
+    // Clean top-level string fields
+    const stringFields = ['topic', 'subtopic', 'difficulty', 'questionDescription', 'codeBlock']
+    stringFields.forEach(field => {
+      if (cleaned[field]) {
+        cleaned[field] = String(cleaned[field]).replace(/undefined/g, '').trim()
+      }
+    })
+
+    // Remove any fields that might cause issues
+    delete cleaned.highlightedCode
+    delete cleaned.formattedCodeBlock
+    delete cleaned.formattedAnswer
+
+    return cleaned
   }
 
   /**
