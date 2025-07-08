@@ -188,7 +188,7 @@ function createCodingExerciseTemplate() {
           <w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Consolas"/>
           <w:sz w:val="20"/>
         </w:rPr>
-        <w:t>{answerNumber}. {answerCode}</w:t>
+        <w:t>{answerCode}</w:t>
       </w:r>
     </w:p>
     {/answers}
