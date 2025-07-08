@@ -58,14 +58,28 @@ class ExerciseTemplateEngine {
       // Process answers for syntax highlighting with enhanced error handling and validation
       if (processed.answers && Array.isArray(processed.answers)) {
         processed.answers = processed.answers.map((answer, index) => {
+          // Handle both string answers and object answers
+          let answerCode, answerNumber
+
+          if (typeof answer === 'string') {
+            // If answer is a string, use it directly as answerCode
+            answerCode = answer
+            answerNumber = index + 1
+          } else {
+            // If answer is an object, extract the appropriate fields
+            answerCode = answer.answerCode || answer.answer || answer.code || answer.solution
+            answerNumber = answer.answerNumber
+          }
+
           // Ensure answer has required fields with comprehensive fallbacks
           const safeAnswer = {
-            answerNumber: this.validateNumber(answer.answerNumber, index + 1),
-            answerCode: this.validateString(
-              answer.answerCode || answer.answer || answer.code || answer.solution,
-              `Answer ${index + 1}`
-            ),
-            ...answer
+            answerNumber: this.validateNumber(answerNumber, index + 1),
+            answerCode: this.validateString(answerCode, `Answer ${index + 1}`)
+          }
+
+          // Only spread object properties if answer is an object (not a string)
+          if (typeof answer === 'object' && answer !== null) {
+            Object.assign(safeAnswer, answer)
           }
 
           return {
