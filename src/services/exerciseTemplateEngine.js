@@ -89,12 +89,17 @@ class ExerciseTemplateEngine {
               safeAnswer.answerCode,
             formattedAnswer: this.formatAnswerCode(safeAnswer.answerCode)
           }
-        }).filter(answer =>
-          answer.answerCode &&
-          answer.answerCode.trim() !== '' &&
-          answer.answerCode !== 'undefined' &&
-          !answer.answerCode.includes('undefined')
-        ) // Remove empty or undefined answers
+        }).filter(answer => {
+          // Ensure answerCode is a valid string
+          if (!answer.answerCode || answer.answerCode === null || answer.answerCode === undefined) {
+            return false
+          }
+
+          const answerCodeStr = String(answer.answerCode)
+          return answerCodeStr.trim() !== '' &&
+                 answerCodeStr !== 'undefined' &&
+                 !answerCodeStr.includes('undefined')
+        }) // Remove empty or undefined answers
 
         // Log processed answers for debugging
         logger.info({
@@ -126,12 +131,26 @@ class ExerciseTemplateEngine {
             ...safeInstruction,
             formattedInstruction: this.formatInstruction(safeInstruction.instruction)
           }
-        }).filter(inst =>
-          inst.instruction &&
-          inst.instruction.trim() !== '' &&
-          inst.instruction !== 'undefined' &&
-          !inst.instruction.includes('undefined')
-        ) // Remove empty or undefined instructions
+        }).filter(inst => {
+          // Ensure instruction is a valid string
+          if (!inst.instruction || inst.instruction === null || inst.instruction === undefined) {
+            return false
+          }
+
+          const instructionStr = String(inst.instruction)
+          return instructionStr.trim() !== '' &&
+                 instructionStr !== 'undefined' &&
+                 !instructionStr.includes('undefined')
+        }) // Remove empty or undefined instructions
+
+        // If all instructions were filtered out, provide a default
+        if (processed.instructions.length === 0) {
+          processed.instructions = [{
+            blankNumber: 1,
+            instruction: "Complete the missing code",
+            formattedInstruction: "Complete the missing code"
+          }]
+        }
       } else {
         // Ensure we always have at least one instruction
         processed.instructions = [{
@@ -139,6 +158,14 @@ class ExerciseTemplateEngine {
           instruction: "Complete the missing code",
           formattedInstruction: "Complete the missing code"
         }]
+      }
+
+      // Add missing template fields with fallbacks
+      processed.questionNumber = processed.questionNumber || 1
+
+      // Ensure sampleScript is mapped from codeBlock if needed
+      if (processed.codeBlock && !processed.sampleScript) {
+        processed.sampleScript = processed.codeBlock
       }
 
       // Add metadata
@@ -238,8 +265,16 @@ class ExerciseTemplateEngine {
    * @returns {string} Formatted instruction
    */
   formatInstruction(instruction) {
+    // Handle null, undefined, or non-string values
+    if (!instruction || instruction === null || instruction === undefined) {
+      return ''
+    }
+
+    // Convert to string to handle non-string inputs
+    const instructionStr = String(instruction)
+
     // Add emphasis to important parts
-    return instruction
+    return instructionStr
       .replace(/(Create|Parse|Find|Form|Print)/g, '<strong>$1</strong>')
       .replace(/`([^`]+)`/g, '<code>$1</code>')
   }

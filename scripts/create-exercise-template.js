@@ -103,7 +103,11 @@ function createCodingExerciseTemplate() {
     </w:p>
     
     <!-- Instructions List -->
-    {#instructions}
+    <w:p>
+      <w:r>
+        <w:t>{#instructions}</w:t>
+      </w:r>
+    </w:p>
     <w:p>
       <w:pPr>
         <w:spacing w:before="120" w:after="120"/>
@@ -116,7 +120,11 @@ function createCodingExerciseTemplate() {
         <w:t>At Blank {blankNumber}: {instruction}</w:t>
       </w:r>
     </w:p>
-    {/instructions}
+    <w:p>
+      <w:r>
+        <w:t>{/instructions}</w:t>
+      </w:r>
+    </w:p>
     
     <!-- Sample Script Header -->
     <w:p>
@@ -178,7 +186,11 @@ function createCodingExerciseTemplate() {
     </w:p>
     
     <!-- Answers List -->
-    {#answers}
+    <w:p>
+      <w:r>
+        <w:t>{#answers}</w:t>
+      </w:r>
+    </w:p>
     <w:p>
       <w:pPr>
         <w:spacing w:before="120" w:after="120"/>
@@ -191,7 +203,11 @@ function createCodingExerciseTemplate() {
         <w:t>{answerCode}</w:t>
       </w:r>
     </w:p>
-    {/answers}
+    <w:p>
+      <w:r>
+        <w:t>{/answers}</w:t>
+      </w:r>
+    </w:p>
     
   </w:body>
 </w:document>`

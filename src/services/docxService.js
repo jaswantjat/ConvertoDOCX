@@ -183,10 +183,44 @@ class DocxService {
 
     // Clean instructions array
     if (cleaned.instructions && Array.isArray(cleaned.instructions)) {
-      cleaned.instructions = cleaned.instructions.map(instruction => ({
-        blankNumber: instruction.blankNumber || 1,
-        instruction: String(instruction.instruction || '').replace(/undefined/g, '').trim() || 'Complete this blank'
-      })).filter(instruction => instruction.instruction !== 'Complete this blank')
+      cleaned.instructions = cleaned.instructions.map((instruction, index) => {
+        // Handle null/undefined blankNumber
+        let blankNumber = instruction.blankNumber
+        if (blankNumber === null || blankNumber === undefined || blankNumber === 'undefined') {
+          blankNumber = index + 1
+        } else {
+          const numValue = parseInt(blankNumber)
+          blankNumber = isNaN(numValue) ? index + 1 : numValue
+        }
+
+        // Handle null/undefined instruction text
+        let instructionText = instruction.instruction
+        if (instructionText === null || instructionText === undefined || instructionText === 'undefined') {
+          instructionText = `Complete blank ${blankNumber}`
+        } else {
+          instructionText = String(instructionText).replace(/undefined/g, '').trim()
+          if (!instructionText) {
+            instructionText = `Complete blank ${blankNumber}`
+          }
+        }
+
+        return {
+          blankNumber,
+          instruction: instructionText
+        }
+      }).filter(instruction =>
+        instruction.instruction &&
+        instruction.instruction !== `Complete blank ${instruction.blankNumber}` &&
+        !instruction.instruction.includes('undefined')
+      )
+
+      // Ensure we have at least one instruction
+      if (cleaned.instructions.length === 0) {
+        cleaned.instructions = [{
+          blankNumber: 1,
+          instruction: 'Complete the missing code'
+        }]
+      }
     }
 
     // Clean top-level string fields
