@@ -350,6 +350,112 @@ def main():
       })
       next(error)
     }
+  },
+
+  /**
+   * Generate multiple exercises in a single DOCX document
+   */
+  async generateMultipleExercises(req, res, next) {
+    try {
+      logger.info('Multiple exercises generation request received', {
+        exerciseCount: req.body?.exercises?.length || 0,
+        service: 'docx-generator-api'
+      })
+
+      // Validate that exercises array exists
+      if (!req.body.exercises || !Array.isArray(req.body.exercises) || req.body.exercises.length === 0) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'exercises array is required and must contain at least one exercise',
+          details: {
+            received: typeof req.body.exercises,
+            expected: 'array with at least one exercise object'
+          }
+        })
+      }
+
+      // Validate each exercise in the array
+      const validationErrors = []
+      const validatedExercises = []
+
+      for (let i = 0; i < req.body.exercises.length; i++) {
+        const exercise = req.body.exercises[i]
+        const { error, value } = generateExerciseSchema.validate(exercise, {
+          abortEarly: false,
+          allowUnknown: true
+        })
+
+        if (error) {
+          validationErrors.push({
+            exerciseIndex: i + 1,
+            errors: error.details.map(detail => ({
+              field: detail.path.join('.'),
+              message: detail.message,
+              value: detail.context?.value
+            }))
+          })
+        } else {
+          validatedExercises.push(value)
+        }
+      }
+
+      // If there are validation errors, return them
+      if (validationErrors.length > 0) {
+        return res.status(400).json({
+          error: 'Validation Error',
+          message: 'One or more exercises have validation errors',
+          validationErrors
+        })
+      }
+
+      // Process multiple exercises
+      const processedData = exerciseTemplateEngine.processMultipleExercises(validatedExercises, {
+        syntaxHighlighting: req.body.options?.syntaxHighlighting || false,
+        theme: req.body.options?.theme || 'github'
+      })
+
+      // Generate DOCX using multi-exercise template
+      const templateName = 'multi-exercise-template.docx'
+      const docxBuffer = await docxService.generateFromTemplate(templateName, processedData)
+
+      // Set response headers for file download
+      const filename = `programming_exercises_${Date.now()}.docx`
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+      res.setHeader('Content-Length', docxBuffer.length)
+
+      logger.info('Multiple exercises DOCX generated successfully', {
+        exerciseCount: validatedExercises.length,
+        filename,
+        bufferSize: docxBuffer.length,
+        service: 'docx-generator-api'
+      })
+
+      res.send(docxBuffer)
+
+    } catch (error) {
+      logger.error('Error generating multiple exercises DOCX', {
+        error: error.message,
+        stack: error.stack,
+        exerciseCount: req.body?.exercises?.length || 0,
+        service: 'docx-generator-api'
+      })
+
+      if (error.message.includes('Template not found')) {
+        return res.status(404).json({
+          error: 'Template Not Found',
+          message: 'Multi-exercise template not found. Please ensure the template is properly installed.'
+        })
+      }
+
+      const statusCode = error.statusCode || 500
+      res.status(statusCode).json({
+        error: statusCode === 500 ? 'Internal Server Error' : 'Processing Error',
+        message: statusCode === 500 ? 'An error occurred while generating the document' : error.message,
+        timestamp: new Date().toISOString()
+      })
+      next(error)
+    }
   }
 }
 

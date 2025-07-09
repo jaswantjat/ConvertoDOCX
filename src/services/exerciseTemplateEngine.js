@@ -22,6 +22,65 @@ class ExerciseTemplateEngine {
   }
 
   /**
+   * Process multiple exercises for consolidated DOCX generation
+   * @param {Array} exercisesArray - Array of exercise data objects
+   * @param {Object} options - Processing options
+   * @returns {Object} Processed data for multiple exercises template
+   */
+  processMultipleExercises(exercisesArray, options = {}) {
+    try {
+      logger.info('Processing multiple exercises for consolidated DOCX', {
+        exerciseCount: exercisesArray?.length || 0,
+        service: 'docx-generator-api'
+      })
+
+      if (!Array.isArray(exercisesArray) || exercisesArray.length === 0) {
+        throw new Error('exercisesArray must be a non-empty array')
+      }
+
+      // Process each exercise individually
+      const processedExercises = exercisesArray.map((exercise, index) => {
+        const processed = this.processExerciseData(exercise, options)
+        // Add exercise number for multi-exercise template
+        processed.exerciseNumber = index + 1
+        return processed
+      })
+
+      // Create consolidated data structure
+      const consolidatedData = {
+        exercises: processedExercises,
+        totalExercises: processedExercises.length,
+        format: exercisesArray[0]?.format || 'docx',
+        language: exercisesArray[0]?.language || 'python',
+        options: exercisesArray[0]?.options || {},
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          totalQuestions: processedExercises.length,
+          topics: [...new Set(processedExercises.map(e => e.topic))],
+          difficulties: [...new Set(processedExercises.map(e => e.difficulty))]
+        }
+      }
+
+      logger.info('Multiple exercises processed successfully', {
+        totalExercises: consolidatedData.totalExercises,
+        topics: consolidatedData.metadata.topics,
+        difficulties: consolidatedData.metadata.difficulties,
+        service: 'docx-generator-api'
+      })
+
+      return consolidatedData
+
+    } catch (error) {
+      logger.error('Error processing multiple exercises', {
+        error: error.message,
+        exerciseCount: exercisesArray?.length || 0,
+        service: 'docx-generator-api'
+      })
+      throw error
+    }
+  }
+
+  /**
    * Process exercise data for template generation
    * @param {Object} exerciseData - Raw exercise data
    * @param {Object} options - Processing options

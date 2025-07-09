@@ -112,6 +112,7 @@ app.post('/api/templates', docxController.uploadTemplate)
 
 // Educational content routes
 app.post('/api/generate-exercise', exerciseController.generateExercise)
+app.post('/api/generate-multiple-exercises', exerciseController.generateMultipleExercises)
 app.get('/api/exercise-template', exerciseController.getExerciseTemplate)
 app.post('/api/validate-exercise', exerciseController.validateExercise)
 
