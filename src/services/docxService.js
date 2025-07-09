@@ -155,12 +155,28 @@ class DocxService {
   cleanDataForTemplate(data) {
     const cleaned = JSON.parse(JSON.stringify(data)) // Deep clone
 
-    // Clean answers array - ensure only required fields and no undefined values
+    // Clean answers array - format for template that expects {answerCode} with number included
     if (cleaned.answers && Array.isArray(cleaned.answers)) {
-      cleaned.answers = cleaned.answers.map(answer => ({
-        answerNumber: answer.answerNumber || 1,
-        answerCode: String(answer.answerCode || '').replace(/undefined/g, '').trim() || 'Answer not provided'
-      })).filter(answer => answer.answerCode !== 'Answer not provided')
+      cleaned.answers = cleaned.answers.map((answer, index) => {
+        // Extract the clean answer code (remove any existing numbers if present)
+        let cleanCode = String(answer.answerCode || '').replace(/undefined/g, '').trim()
+
+        // Remove any leading number pattern (e.g., "1. " or "2. ") to avoid duplicates
+        cleanCode = cleanCode.replace(/^\d+\.\s*/, '')
+
+        // If no clean code remains, provide a fallback
+        if (!cleanCode) {
+          cleanCode = 'Answer not provided'
+        }
+
+        // Format the final answerCode with the number for the template
+        const answerNumber = answer.answerNumber || (index + 1)
+        const finalAnswerCode = `${answerNumber}. ${cleanCode}`
+
+        return {
+          answerCode: finalAnswerCode
+        }
+      }).filter(answer => !answer.answerCode.endsWith('Answer not provided'))
     }
 
     // Clean instructions array
