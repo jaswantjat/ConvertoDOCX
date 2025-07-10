@@ -247,11 +247,20 @@ function createMultiExerciseTemplate() {
     <w:p>
       <w:pPr>
         <w:spacing w:before="120" w:after="120"/>
+        <w:ind w:left="240"/>
       </w:pPr>
       <w:r>
         <w:rPr>
           <w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Consolas"/>
-          <w:sz w:val="20"/>
+          <w:sz w:val="18"/>
+          <w:b/>
+        </w:rPr>
+        <w:t>Answer {answerNumber}: </w:t>
+      </w:r>
+      <w:r>
+        <w:rPr>
+          <w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Consolas"/>
+          <w:sz w:val="18"/>
         </w:rPr>
         <w:t>{answerCode}</w:t>
       </w:r>
