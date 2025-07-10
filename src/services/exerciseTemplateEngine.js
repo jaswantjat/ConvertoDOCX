@@ -130,15 +130,20 @@ class ExerciseTemplateEngine {
             answerNumber = answer.answerNumber
           }
 
+          // Clean answer code to remove any existing number prefixes
+          const cleanedAnswerCode = this.cleanAnswerCode(answerCode)
+
           // Ensure answer has required fields with comprehensive fallbacks
           const safeAnswer = {
             answerNumber: this.validateNumber(answerNumber, index + 1),
-            answerCode: this.validateString(answerCode, `Answer ${index + 1}`)
+            answerCode: this.validateString(cleanedAnswerCode, `Answer ${index + 1}`)
           }
 
           // Only spread object properties if answer is an object (not a string)
+          // But preserve our cleaned answerCode and answerNumber
           if (typeof answer === 'object' && answer !== null) {
-            Object.assign(safeAnswer, answer)
+            const { answerCode: originalAnswerCode, answerNumber: originalAnswerNumber, ...otherProps } = answer
+            Object.assign(safeAnswer, otherProps)
           }
 
           return {
@@ -790,6 +795,24 @@ class ExerciseTemplateEngine {
     }
 
     return cleanedText
+  }
+
+  /**
+   * Clean answer code by removing number prefixes like "1.", "2.", etc.
+   * @param {string} answerCode - Raw answer code that might have number prefixes
+   * @returns {string} Cleaned answer code without number prefixes
+   */
+  cleanAnswerCode(answerCode) {
+    if (!answerCode || typeof answerCode !== 'string') {
+      return answerCode
+    }
+
+    // Remove number prefixes like "1.", "2.", "10.", etc. at the beginning
+    // This regex matches: start of string, optional whitespace, number, period, optional whitespace
+    const cleanedCode = answerCode.replace(/^\s*\d+\.\s*/, '').trim()
+
+    // If the cleaning resulted in an empty string, return the original
+    return cleanedCode || answerCode
   }
 
   /**
